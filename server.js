@@ -4,7 +4,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const session = require("express-session");
-const passport = require("passport");
 
 const app = express();
 
@@ -62,6 +61,10 @@ app.use((err, req, res, next) => {
     message: "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
+});
+
+app.get("/", (req, res) => {
+  res.send("✅ Invoice Backend is running on Railway!");
 });
 
 const PORT = process.env.PORT || 5000;
