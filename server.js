@@ -4,6 +4,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const session = require("express-session");
+const passport = require("passport"); // 🟢 Tambahkan ini
 
 const app = express();
 
@@ -25,6 +26,8 @@ app.use(
     cookie: { secure: process.env.NODE_ENV === "production" },
   })
 );
+
+// 🟢 Passport Config
 require("./config/passport")(passport);
 
 app.use(passport.initialize());
@@ -32,15 +35,9 @@ app.use(passport.session());
 
 // Database Connection
 mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
-
-// Passport Config
-require("./config/passport")(passport);
 
 // Routes
 app.use("/api/auth", require("./routes/auth"));
@@ -54,6 +51,11 @@ app.get("/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date() });
 });
 
+// Default root route
+app.get("/", (req, res) => {
+  res.send("✅ Invoice Backend is running on Railway!");
+});
+
 // Error Handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -61,10 +63,6 @@ app.use((err, req, res, next) => {
     message: "Something went wrong!",
     error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
-});
-
-app.get("/", (req, res) => {
-  res.send("✅ Invoice Backend is running on Railway!");
 });
 
 const PORT = process.env.PORT || 5000;
