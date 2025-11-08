@@ -1,34 +1,52 @@
-// routes/auth.js
 const express = require("express");
 const passport = require("passport");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
 
+// Google Login route
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
+// Callback setelah login
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    successRedirect: process.env.FRONTEND_URL,
-    failureRedirect: "/login/failed",
-  })
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
+    session: false,
+  }),
+  (req, res) => {
+    // Buat JWT token
+    const token = jwt.sign(
+      { id: req.user._id, email: req.user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Redirect ke frontend dengan token
+    res.redirect(`${process.env.FRONTEND_URL}/login?token=${token}`);
+  }
 );
 
-router.get("/login/failed", (req, res) => {
-  res.status(401).json({ success: false, message: "Login failed" });
-});
+// Route untuk ambil user saat sudah login (optional)
+router.get("/me", async (req, res) => {
+  try {
+    if (!req.headers.authorization)
+      return res.status(401).json({ message: "No token provided" });
 
-router.get("/login/success", (req, res) => {
-  if (req.user) {
-    res.status(200).json({
-      success: true,
-      message: "User authenticated",
-      user: req.user,
-    });
-  } else {
-    res.status(401).json({ success: false, message: "Not authenticated" });
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const User = require("../models/User");
+    const user = await User.findById(decoded.id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ user });
+  } catch (error) {
+    console.error("Auth /me error:", error);
+    res.status(401).json({ message: "Invalid or expired token" });
   }
 });
 

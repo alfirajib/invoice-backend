@@ -11,7 +11,10 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [
+      "http://localhost:5173",
+      "https://invoice-frontend-snowy.vercel.app",
+    ],
     credentials: true,
   })
 );
